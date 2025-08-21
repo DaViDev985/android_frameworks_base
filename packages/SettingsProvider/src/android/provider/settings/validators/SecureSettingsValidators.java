@@ -495,5 +495,7 @@ public class SecureSettingsValidators {
         VALIDATORS.put(Secure.KEYBOX_DATA, ANY_STRING_VALIDATOR);
         VALIDATORS.put(Secure.PIF_DATA, ANY_STRING_VALIDATOR);
         VALIDATORS.put(Secure.FETCHED_PIF, ANY_STRING_VALIDATOR);
+        VALIDATORS.put(Secure.QS_SHOW_DATA_USAGE, BOOLEAN_VALIDATOR);
+        VALIDATORS.put(Secure.QS_DATA_USAGE_CYCLE_TYPE, new InclusiveIntegerRangeValidator(0, 1));
     }
 }
