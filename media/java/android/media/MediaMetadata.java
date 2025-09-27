@@ -979,38 +979,43 @@ public final class MediaMetadata implements Parcelable {
             if (bmp == null) {
                 return null;
             }
+            
             int srcWidth = bmp.getWidth();
             int srcHeight = bmp.getHeight();
+            
+            if (srcWidth <= 0 || srcHeight <= 0) {
+                return bmp;
+            }
+            
             if (srcWidth <= maxDimension && srcHeight <= maxDimension) {
                 return bmp;
             }
-            int sampleSize = calculateSampleSize(srcWidth, srcHeight, maxDimension, maxDimension);
-            int scaledWidth = srcWidth / sampleSize;
-            int scaledHeight = srcHeight / sampleSize;
-            if (scaledWidth > maxDimension) {
-                scaledWidth = maxDimension;
+            
+            try {
+                // Calculate proper scaling to maintain aspect ratio
+                float scale = Math.min((float) maxDimension / srcWidth, (float) maxDimension / srcHeight);
+                int scaledWidth = Math.round(srcWidth * scale);
+                int scaledHeight = Math.round(srcHeight * scale);
+                
+                // Ensure we don't exceed max dimension due to rounding
+                if (scaledWidth > maxDimension) scaledWidth = maxDimension;
+                if (scaledHeight > maxDimension) scaledHeight = maxDimension;
+                
+                // Single scaling operation - more efficient than compression approach
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(bmp, scaledWidth, scaledHeight, true);
+                
+                // Only recycle original if we created a new bitmap
+                if (scaledBitmap != bmp && scaledBitmap != null) {
+                    bmp.recycle();
+                    return scaledBitmap;
+                }
+                
+                return bmp;
+            } catch (OutOfMemoryError e) {
+                return bmp; // Return original on failure
+            } catch (Exception e) {
+                return bmp; // Return original on failure
             }
-            if (scaledHeight > maxDimension) {
-                scaledHeight = maxDimension;
-            }
-            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bmp, scaledWidth, scaledHeight, true);
-            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-            scaledBitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 90, outputStream);
-            byte[] compressedData = outputStream.toByteArray();
-            Bitmap compressedBitmap = BitmapFactory.decodeByteArray(compressedData, 0, compressedData.length);
-            scaledBitmap.recycle();
-            bmp.recycle();
-            return compressedBitmap;
-        }
-
-        private static int calculateSampleSize(int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
-            int sampleSize = 1;
-            if (srcWidth > dstWidth || srcHeight > dstHeight) {
-                int widthSample = (int) Math.ceil((float) srcWidth / dstWidth);
-                int heightSample = (int) Math.ceil((float) srcHeight / dstHeight);
-                sampleSize = Math.max(widthSample, heightSample);
-            }
-            return sampleSize;
         }
     }
 }
